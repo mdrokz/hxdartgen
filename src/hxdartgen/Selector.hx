@@ -1,6 +1,0 @@
-package hxdartgen;
-
-
-class Selector {
-    
-}
