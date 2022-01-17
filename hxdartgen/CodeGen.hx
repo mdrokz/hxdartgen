@@ -1,0 +1,6 @@
+package hxdartgen;
+
+
+class CodeGen {
+    
+}
