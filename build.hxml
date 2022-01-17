@@ -1,0 +1,7 @@
+-main Main
+
+--class-path hxdartgen
+
+--macro hxdartgen.Generator.use()
+
+-js out.js
