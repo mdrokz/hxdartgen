@@ -50,11 +50,11 @@ class Generator {
         var outJS = Compiler.getOutput();
         var outPath = Path.directory(outJS);
         outName = Path.withoutDirectory(Path.withoutExtension(outJS));
-        outDTS = Path.join([outPath, '$outName.d.ts']);
+        outDTS = Path.join([outPath, '$outName.dart']);
         outETSName = getName(haxe.macro.Context.definedValue('hxtsdgen_enums_ts'), '$outName-enums');
-        outETS = Path.join([outPath, '$outETSName.ts']);
+        outETS = Path.join([outPath, '$outETSName.dart']);
         outITSName = getName(haxe.macro.Context.definedValue('hxtsdgen_types_ts'), '$outName-types');
-        outITS = Path.join([outPath, '$outITSName.d.ts']);
+        outITS = Path.join([outPath, '$outITSName.dart']);
 
         selector = createSelector();
         var exposed = selector.getExposed(types);
