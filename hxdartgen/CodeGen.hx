@@ -13,6 +13,7 @@ import hxdartgen.Generator;
 import hxdartgen.TypeRenderer.renderClass;
 import hxdartgen.TypeRenderer.renderType;
 import hxdartgen.ArgsRenderer.renderArgs;
+import hxdartgen.ArgsRenderer.renderConstructorArgs;
 
 using haxe.macro.Tools;
 using StringTools;
@@ -240,7 +241,7 @@ class CodeGen {
         return wrapInNamespace(exposePath, function(name, indent) {
             var parts = [];
 
-            parts.push('${indent}const enum $name {');
+            parts.push('${indent} enum $name {');
 
             {
                 var indent = indent + "\t";
@@ -349,7 +350,12 @@ class CodeGen {
             switch (ctor.type) {
                 case TFun(args, _):
                     var prefix = if (ctor.isPublic) "" else "protected ";
-                    parts.push('${indent}${prefix}constructor(${renderArgs(selector, args)}) {}');
+                    var constructor = '${indent}${prefix}${cl.name}';
+
+                    constructor += if (args.length > 0) '({${renderConstructorArgs(selector, args)}}) {}' else '() {}';
+
+                    // parts.push('${indent}${prefix}${cl.name}({${renderConstructorArgs(selector, args)}}) {}');
+                    parts.push(constructor);
                 default:
                     throw 'Invalid constructor type ${ctor.type.toString()}';
             }
