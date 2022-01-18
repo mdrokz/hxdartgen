@@ -3,7 +3,7 @@ package hxdartgen;
 import haxe.macro.Expr;
 import haxe.macro.Printer;
 
-class ObjectPrinter extends Printer {
+class CustomPrinter extends Printer {
 
     public function new(?tabString = "\t") {
         super(tabString);

@@ -1,7 +1,7 @@
 package hxdartgen;
 
 import haxe.macro.Context;
-import hxdartgen.Utils.ObjectPrinter;
+import hxdartgen.Utils.CustomPrinter;
 import haxe.macro.ExprTools;
 import haxe.io.Path;
 #if macro
@@ -323,7 +323,7 @@ class CodeGen {
 
 	function addField(field:ClassField, isStatic:Bool, isInterface:Bool, indent:String, parts:Array<String>) {
 		var prefix = if (isStatic) "static " else "";
-		var printer = new ObjectPrinter();
+		var printer = new CustomPrinter();
 
 		switch [field.kind, field.type] {
 			case [FMethod(_), TFun(args, ret)]:
