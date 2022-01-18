@@ -32,11 +32,14 @@ class TypeRenderer {
 
             case TAbstract(_.get() => ab, params):
                 switch [ab, params] {
-                    case [{pack: [], name: "Int" | "Float"}, _]:
-                        "number";
+                    case [{pack: [], name: "Int"}, _]:
+                        "int";
+
+                    case [{pack: [], name: "Float"},_]:
+                        "double";
 
                     case [{pack: [], name: "Bool"}, _]:
-                        "boolean";
+                        "bool";
 
                     case [{pack: [], name: "Void"}, _]:
                         "void";
@@ -44,10 +47,6 @@ class TypeRenderer {
                     case [{pack: [], name: "Null"}, [realT]]: // Haxe 4.x
                         // TODO: generate `| null` union unless it comes from an optional field?
                         renderType(ctx, realT, paren);
-
-                    case [{pack: ["haxe", "extern"], name: "EitherType"}, [aT, bT]]:
-                        '${renderType(ctx, aT, true)} | ${renderType(ctx, bT, true)}';
-
                     default:
                         // TODO: do we want to handle more `type Name = Underlying` cases?
                         if (ab.meta.has(":expose") || ctx.ensureIncluded(t)) formatName(ctx, ab, params);
@@ -81,13 +80,13 @@ class TypeRenderer {
                 wrap('(${renderArgs(ctx, args)}) => ${renderType(ctx, ret)}');
 
             case TDynamic(null):
-                'any';
+                'dynamic';
 
-            case TDynamic(elemT):
-                '{ [key: string]: ${renderType(ctx, elemT)} }';
+            // case TDynamic(elemT):
+            //     '{ [key: string]: ${renderType(ctx, elemT)} }';
 
             default:
-              var msg = 'Cannot render type ${t.toString()} into a TypeScript declaration (TODO?)';
+              var msg = 'Cannot render type ${t.toString()} into a Dart type';
               if(Generator.THROW_ON_UNKNOWN)
                 throw msg;
               else  {
