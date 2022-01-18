@@ -103,7 +103,7 @@ class CodeGen {
 
             switch [f.kind, f.type] {
                 case [FMethod(_), TFun(args, ret)]:
-                    var prefix = isExport ? "export function " : "function ";
+                    var prefix = "function";
                     parts.push(renderFunction(name, args, ret, f.params, indent, prefix));
                 default:
                     throw new Error("This kind of field cannot be exposed to JavaScript", f.pos);
@@ -115,7 +115,7 @@ class CodeGen {
 
     function renderFunction(name:String, args:Array<{name:String, opt:Bool, t:Type}>, ret:Type, params:Array<TypeParameter>, indent:String, prefix:String):String {
         var tparams = renderTypeParams(params);
-        return '$indent$prefix$name$tparams(${renderArgs(selector, args)}): ${renderType(selector, ret)};';
+        return '$indent$prefix${renderType(selector, ret)} $name$tparams(${renderArgs(selector, args)}) {}';
     }
 
     function renderTypeParams(params:Array<TypeParameter>):String {
@@ -170,10 +170,9 @@ class CodeGen {
             // elsewhere as a namespace for TypeScript
             var tparams = renderTypeParams(cl.params);
             var isInterface = cl.isInterface;
-            var type = isInterface ? 'interface' : 'class';
-            var export = isExport ? "export " : "";
+            var type = 'class';
             var inherit = getInheritance(cl);
-            parts.push('$indent${export}$type $name$tparams$inherit {');
+            parts.push('${indent}$type $name$tparams$inherit {');
 
             {
                 var indent = indent + "\t";
@@ -202,17 +201,6 @@ class CodeGen {
             parts.push('$indent}');
             return parts.join("\n");
         });
-    }
-
-    function classIsInterface(cl:ClassType) {
-        if (cl.isInterface) return true;
-
-        var exposed = cl.meta.has(":expose");
-        if (!cl.isInterface && !exposed) {
-            haxe.macro.Context.warning('Exposing referenced class ${cl.name} as interface', cl.pos);
-            return true; // expose interface
-        }
-        return false;
     }
 
     function getInheritance(t:ClassType) {
@@ -252,8 +240,7 @@ class CodeGen {
         return wrapInNamespace(exposePath, function(name, indent) {
             var parts = [];
 
-            var export = isExport ? "export " : (exposePath.length == 0 ? "declare " : "");
-            parts.push('$indent${export}const enum $name {');
+            parts.push('${indent}const enum $name {');
 
             {
                 var indent = indent + "\t";
@@ -281,8 +268,7 @@ class CodeGen {
             var parts = [];
 
             var tparams = renderTypeParams(t.params);
-            var export = isExport ? "export " : "";
-            parts.push('$indent${export}type $name$tparams = {');
+            parts.push('${indent}type $name$tparams = {');
 
             {
                 var indent = indent + "\t";
@@ -363,7 +349,7 @@ class CodeGen {
             switch (ctor.type) {
                 case TFun(args, _):
                     var prefix = if (ctor.isPublic) "" else "protected ";
-                    parts.push('${indent}${prefix}constructor(${renderArgs(selector, args)});');
+                    parts.push('${indent}${prefix}constructor(${renderArgs(selector, args)}) {}');
                 default:
                     throw 'Invalid constructor type ${ctor.type.toString()}';
             }
