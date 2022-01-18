@@ -1,5 +1,8 @@
 package hxdartgen;
 
+import haxe.macro.Context;
+import hxdartgen.Utils.ObjectPrinter;
+import haxe.macro.ExprTools;
 import haxe.io.Path;
 #if macro
 import haxe.macro.Expr;
@@ -320,6 +323,7 @@ class CodeGen {
 
 	function addField(field:ClassField, isStatic:Bool, isInterface:Bool, indent:String, parts:Array<String>) {
 		var prefix = if (isStatic) "static " else "";
+		var printer = new ObjectPrinter();
 
 		switch [field.kind, field.type] {
 			case [FMethod(_), TFun(args, ret)]:
@@ -333,7 +337,20 @@ class CodeGen {
 				}
 				if (read != AccCall) {
 					var option = isInterface && isNullable(field) ? "?" : "";
-					parts.push('$indent$prefix${field.name}$option: ${renderType(selector, field.type)};');
+
+					var fieldExpr = field.meta.get()[0].params[0];
+
+					switch fieldExpr.expr {
+						case EObjectDecl(_): {
+								var x = printer.printExpr(fieldExpr);
+
+								parts.push(' var $indent$prefix${field.name}$option = $x;');
+							}
+						default: {
+                            var x = printer.printExpr(fieldExpr);
+							parts.push(' ${renderType(selector, field.type)}$indent$prefix${field.name}$option = $x;');
+                        }
+					}
 				}
 
 			default:
@@ -353,7 +370,11 @@ class CodeGen {
 					var prefix = if (ctor.isPublic) "" else "protected ";
 					var constructor = '${indent}${prefix}${cl.name}';
 
-					constructor += if (args.length > 0) '({${renderConstructorArgs(selector, args)}}) {}' else '() {}';
+                    var expr = ctor.expr();
+
+                    var x = ExprTools.toString(Context.getTypedExpr(expr));
+
+					constructor += if (args.length > 0) '({${renderConstructorArgs(selector, args)}}) {${x}}' else '() {}';
 
 					// parts.push('${indent}${prefix}${cl.name}({${renderConstructorArgs(selector, args)}}) {}');
 					parts.push(constructor);
