@@ -1,5 +1,6 @@
 package hxdartgen;
 
+import haxe.macro.Printer;
 import haxe.macro.Context;
 import hxdartgen.Utils.CustomPrinter;
 import haxe.macro.ExprTools;
@@ -347,9 +348,9 @@ class CodeGen {
 								parts.push(' var $indent$prefix${field.name}$option = $x;');
 							}
 						default: {
-                            var x = printer.printExpr(fieldExpr);
-							parts.push(' ${renderType(selector, field.type)}$indent$prefix${field.name}$option = $x;');
-                        }
+								var x = printer.printExpr(fieldExpr);
+								parts.push(' ${renderType(selector, field.type)}$indent$prefix${field.name}$option = $x;');
+							}
 					}
 				}
 
@@ -370,11 +371,52 @@ class CodeGen {
 					var prefix = if (ctor.isPublic) "" else "protected ";
 					var constructor = '${indent}${prefix}${cl.name}';
 
-                    var expr = ctor.expr();
+					var printer = new CustomPrinter();
 
-                    var x = ExprTools.toString(Context.getTypedExpr(expr));
+					var expr = ctor.expr();
 
-					constructor += if (args.length > 0) '({${renderConstructorArgs(selector, args)}}) {${x}}' else '() {}';
+					var ctorExprs = [];
+
+					var n = null;
+
+					switch expr.expr {
+						case TFunction(tfunc): {
+								var v = Context.getTypedExpr(tfunc.expr);
+								// z += v;
+								n = v;
+								switch v.expr {
+									case EBlock(exprs): {
+											for (e in exprs) {
+												switch e.expr {
+													case EVars(vars): {
+															var name = vars[0].name;
+															var vexpr = vars[0].expr;
+															ctorExprs.push(macro var $name = $vexpr);
+														}
+
+													case EBinop(op, e1, e2): {
+															ctorExprs.push(macro $e1 = $e2);
+														}
+
+													default:
+												}
+											}
+										}
+
+									default:
+								}
+							}
+						default:
+					};
+
+					var x = ExprTools.toString(Context.getTypedExpr(expr));
+
+					// printer.printExprs(ctorExprs,"")
+					// '(\n{${renderConstructorArgs(selector, args)}}) {${printer.printExprs(ctorExprs,"\n")}}'
+
+					constructor += if (args.length > 0) '({${renderConstructorArgs(selector, args)}})' += ExprTools.toString(macro $b{
+						ctorExprs
+					}); else '() {}';
 
 					// parts.push('${indent}${prefix}${cl.name}({${renderConstructorArgs(selector, args)}}) {}');
 					parts.push(constructor);
