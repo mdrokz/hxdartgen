@@ -1,6 +1,5 @@
 package hxdartgen;
 
-import haxe.macro.Printer;
 import haxe.macro.Context;
 import hxdartgen.Utils.CustomPrinter;
 import haxe.macro.ExprTools;
@@ -271,18 +270,27 @@ class CodeGen {
 		if (exposePath == null)
 			exposePath = t.pack.concat([t.name]);
 
+		trace(t.type.follow());
+
+		switch t.type {
+			case TAnonymous(_ => _.get() => v): {
+				trace(anon.fields[0].name);
+			}
+
+			default:
+		}
+
 		return wrapInNamespace(exposePath, function(name, indent) {
 			var parts = [];
 
 			var tparams = renderTypeParams(t.params);
-			parts.push('${indent}type $name$tparams = {');
+			parts.push('${indent}class $name$tparams {');
 
 			{
 				var indent = indent + "\t";
 				var fields = anon.fields;
 				for (field in fields)
-					if (field.isPublic)
-						addField(field, false, true, indent, parts);
+					addField(field, false, true, indent, parts);
 			}
 
 			if (isExport)
@@ -333,24 +341,32 @@ class CodeGen {
 			case [FVar(read, write), _]:
 				switch (write) {
 					case AccNo | AccNever | AccCall:
-						prefix += "readonly ";
+						prefix += "final";
 					default:
 				}
 				if (read != AccCall) {
 					var option = isInterface && isNullable(field) ? "?" : "";
 
-					var fieldExpr = field.meta.get()[0].params[0];
+					var field_var = field.meta.get()[0];
 
-					switch fieldExpr.expr {
-						case EObjectDecl(_): {
-								var x = printer.printExpr(fieldExpr);
+					// trace(Context.follow(field.type));
 
-								parts.push(' var $indent$prefix${field.name}$option = $x;');
-							}
-						default: {
-								var x = printer.printExpr(fieldExpr);
-								parts.push(' ${renderType(selector, field.type)}$indent$prefix${field.name}$option = $x;');
-							}
+					if (Reflect.field(field_var,"params") != null) {
+						var fieldExpr = field_var.params[0];
+
+						switch fieldExpr.expr {
+							case EObjectDecl(_): {
+									var x = printer.printExpr(fieldExpr);
+
+									parts.push(' var $indent$prefix${field.name}$option = $x;');
+								}
+							default: {
+									var x = printer.printExpr(fieldExpr);
+									parts.push('$indent$prefix ${renderType(selector, field.type)} ${field.name}$option = $x;');
+								}
+						}
+					} else {
+						parts.push('late$indent$prefix ${renderType(selector, field.type)} ${field.name};');
 					}
 				}
 
@@ -371,52 +387,11 @@ class CodeGen {
 					var prefix = if (ctor.isPublic) "" else "protected ";
 					var constructor = '${indent}${prefix}${cl.name}';
 
-					var printer = new CustomPrinter();
-
 					var expr = ctor.expr();
-
-					var ctorExprs = [];
-
-					var n = null;
-
-					switch expr.expr {
-						case TFunction(tfunc): {
-								var v = Context.getTypedExpr(tfunc.expr);
-								// z += v;
-								n = v;
-								switch v.expr {
-									case EBlock(exprs): {
-											for (e in exprs) {
-												switch e.expr {
-													case EVars(vars): {
-															var name = vars[0].name;
-															var vexpr = vars[0].expr;
-															ctorExprs.push(macro var $name = $vexpr);
-														}
-
-													case EBinop(op, e1, e2): {
-															ctorExprs.push(macro $e1 = $e2);
-														}
-
-													default:
-												}
-											}
-										}
-
-									default:
-								}
-							}
-						default:
-					};
 
 					var x = ExprTools.toString(Context.getTypedExpr(expr));
 
-					// printer.printExprs(ctorExprs,"")
-					// '(\n{${renderConstructorArgs(selector, args)}}) {${printer.printExprs(ctorExprs,"\n")}}'
-
-					constructor += if (args.length > 0) '({${renderConstructorArgs(selector, args)}})' += ExprTools.toString(macro $b{
-						ctorExprs
-					}); else '() {}';
+					constructor += if (args.length > 0) '({${renderConstructorArgs(selector, args)}}) {${x}}' else '() {}';
 
 					// parts.push('${indent}${prefix}${cl.name}({${renderConstructorArgs(selector, args)}}) {}');
 					parts.push(constructor);
