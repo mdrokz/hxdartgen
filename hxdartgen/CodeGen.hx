@@ -270,16 +270,6 @@ class CodeGen {
 		if (exposePath == null)
 			exposePath = t.pack.concat([t.name]);
 
-		trace(t.type.follow());
-
-		switch t.type {
-			case TAnonymous(_ => _.get() => v): {
-				trace(anon.fields[0].name);
-			}
-
-			default:
-		}
-
 		return wrapInNamespace(exposePath, function(name, indent) {
 			var parts = [];
 
