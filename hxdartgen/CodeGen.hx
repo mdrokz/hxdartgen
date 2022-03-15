@@ -172,7 +172,7 @@ class CodeGen {
 			var isInterface = cl.isInterface;
 			var type = 'class';
 			var inherit = getInheritance(cl);
-			parts.push('${indent}$type $name$tparams$inherit {');
+			parts.push('${indent}$type ${cl.name}$tparams$inherit {');
 
 			{
 				var indent = indent + "\t";
@@ -270,25 +270,23 @@ class CodeGen {
 		if (exposePath == null)
 			exposePath = t.pack.concat([t.name]);
 
-		return wrapInNamespace(exposePath, function(name, indent) {
-			var parts = [];
+		var parts = [];
 
-			var tparams = renderTypeParams(t.params);
-			parts.push('${indent}class $name$tparams {');
+		var tparams = renderTypeParams(t.params);
+		parts.push('class ${t.name}$tparams {');
 
-			{
-				var indent = indent + "\t";
-				var fields = anon.fields;
-				for (field in fields)
-					addField(field, false, true, indent, parts);
-			}
+		{
+			var indent = "\t";
+			var fields = anon.fields;
+			for (field in fields)
+				addField(field, false, true, indent, parts);
+		}
 
-			if (isExport)
-				addTypeExportRef(exposePath, name);
+		if (isExport)
+			addTypeExportRef(exposePath, t.name);
 
-			parts.push('$indent}');
-			return parts.join("\n");
-		});
+		parts.push('}');
+		return parts.join("\n");
 	}
 
 	function addConstValue(field:ClassField, indent:String, parts:Array<String>) {
@@ -341,7 +339,7 @@ class CodeGen {
 
 					// trace(Context.follow(field.type));
 
-					if (Reflect.field(field_var,"params") != null) {
+					if (Reflect.field(field_var, "params") != null) {
 						var fieldExpr = field_var.params[0];
 
 						switch fieldExpr.expr {
@@ -374,7 +372,7 @@ class CodeGen {
 			privateCtor = false;
 			switch (ctor.type) {
 				case TFun(args, _):
-					var prefix = if (ctor.isPublic) "" else "protected ";
+					var prefix = "";
 					var constructor = '${indent}${prefix}${cl.name}';
 
 					var expr = ctor.expr();
@@ -389,7 +387,7 @@ class CodeGen {
 					throw 'Invalid constructor type ${ctor.type.toString()}';
 			}
 		} else if (!isInterface) {
-			parts.push('${indent}protected constructor();');
+			parts.push('${indent} ${cl.name}();');
 		}
 	}
 
